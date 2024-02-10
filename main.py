@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 import pyperclip
+import json
 
 
 def save_password():
@@ -8,17 +9,32 @@ def save_password():
     p = password_input.get()
     e = email_input.get()
     
-    if  w and p and e:
+    new_data = {
+        w: {
+            "email": e,
+            "password": p,
+        }
+    }
     
-        is_ok = messagebox.askokcancel(title=w, message=f"These are the details entered: \n Email: {e}\nPassword: {p}\nIs it ok to save?")
-        if is_ok:
-            with open("data.txt", "a") as f:
-                f.write(f"{website_input.get()} | {email_input.get()} | {password_input.get()} \n")
-            
-                website_input.delete(0, END)
-                password_input.delete(0, END)
-            
-            messagebox.showinfo(message="Saved Successfully")
+    if  w and p and e:
+
+        try:
+            with open("data.json", "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+                    
+            with open("data.json", "w") as f:
+                json.dump(new_data, f, indent=4)
+        else: 
+            data.update(new_data)
+                
+            with open("data.json", "w") as f:
+                json.dump(new_data, f)          
+        finally:
+            website_input.delete(0, END)
+            password_input.delete(0, END)
+        
+        messagebox.showinfo(message="Saved Successfully")
     else:
         messagebox.showinfo(title="Oops", message="Please make sure you haven't left any fields empty")
 
@@ -48,6 +64,21 @@ def password_generator():
     
     pyperclip.copy(password)
 
+def search():
+    name = website_input.get()
+    
+    try:
+        with open('data.json') as f:
+            websites = json.load(f)
+    except FileNotFoundError:
+        messagebox.showerror(title="Error", message="No data file found, save some information first.")  
+    
+    else:
+        if name in websites:
+            messagebox.showinfo(title=name, message=f"Email: {websites[name]['email']}\npassword: {websites[name]['password']}")
+        else:
+            messagebox.showerror(message="Data not found")
+        
 window = Tk()
 window.title("MyPass")
 window.config(padx=50, pady=50)
@@ -77,5 +108,8 @@ generate_button = Button(text="Generate Password", command=password_generator)
 generate_button.grid(row=3, column=2, padx=10, pady=10)
 add_button = Button(text="Add", width=36, command=save_password)
 add_button.grid(row=4, column=1, columnspan=2, padx=10, pady=10 )
+
+search_button = Button(text="Search", command=search)
+search_button.grid(row=1, column=2, padx=10)
 
 window.mainloop()
